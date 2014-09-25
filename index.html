@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Example: Integration of the TinyMCE WYSIWYG editor into the ExtJS</title>
+
+    <script type="text/javascript" src="extjs/bootstrap.js"></script>
+    <script type="text/javascript" src="tinymce/tinymce.js"></script>
+    <script type="text/javascript" src="TinyMCETextArea.js"></script>
+  
+<style>  
+body {
+    padding:10px;
+}
+p {
+    margin-bottom:15px;
+    font-size:14px;
+}
+h1 {
+    font-size:18px;
+    margin-bottom:20px;
+}
+h2 {
+    font-size:16px;
+    color:#333;
+    font-weight:bold;
+    margin:10px 0;
+}
+li {
+  font-size:14px;
+  list-style-type:disc;
+  list-style-position:inside;
+}
+
+.x-form-textarea
+{
+  margin: 0px;
+}
+
+.tinymce-error-field
+{
+  border: 1px solid red !important;
+}
+
+.tinymce-hide-border
+{
+  border-width: 0px;
+}
+
+</style>  
+<script type="text/javascript">
+
+if (typeof console.log == "object" && Function.prototype.bind && console) {
+  ["log","info","warn","error","assert","dir","clear","profile","profileEnd"]
+    .forEach(function (method) {
+      console[method] = this.call(console[method], console);
+    }, Function.prototype.bind);
+}
+
+function show_dirties(form)
+{
+  var dirties = "";
+
+  form.getFields().each(function (item, index, length) {
+    if(item.isDirty())
+    {
+      dirties += item.name + '(' + item.getXType() + '): ' +  + ' - current[' + escape(item.getValue()) + '] old[' + escape(item.originalValue) + ']\n';
+    }
+  });
+
+  if(dirties == "") dirties = "No dirty fields";
+  
+  alert(dirties);
+}
+
+var tinyCfg1 = {
+        plugins: [
+        "advlist autolink lists link image charmap print preview hr anchor pagebreak",
+        "searchreplace wordcount visualblocks visualchars code fullscreen",
+        "insertdatetime media nonbreaking save table contextmenu directionality",
+        "emoticons template paste textcolor"
+        ],
+
+        toolbar1: "newdocument fullpage | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | styleselect formatselect fontselect fontsizeselect",
+        toolbar2: "cut copy paste | searchreplace | bullist numlist | outdent indent blockquote | undo redo | link unlink anchor image media code | inserttime preview | forecolor backcolor",
+        toolbar3: "table | hr removeformat | subscript superscript | charmap emoticons | print fullscreen | ltr rtl | spellchecker | visualchars visualblocks nonbreaking template pagebreak restoredraft",
+
+        content_css : "contents.css",
+        
+        menubar: true,
+        toolbar_items_size: 'small'
+	};
+
+var tinyCfg2 = {
+        plugins: [
+        "advlist autolink lists link image charmap print preview hr anchor pagebreak",
+        "searchreplace wordcount visualblocks visualchars code fullscreen",
+        "insertdatetime media nonbreaking save table contextmenu directionality",
+        "emoticons template paste textcolor"
+        ],
+
+        toolbar1: "newdocument fullpage | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | styleselect formatselect fontselect fontsizeselect",
+        toolbar2: "cut copy paste | searchreplace | bullist numlist | outdent indent blockquote | undo redo | link unlink anchor image media code | inserttime preview | forecolor backcolor",
+        toolbar3: "table | hr removeformat | subscript superscript | charmap emoticons | print fullscreen | ltr rtl | spellchecker | visualchars visualblocks nonbreaking template pagebreak restoredraft",
+
+        content_css : "contents.css",
+        
+        menubar: true,
+        toolbar_items_size: 'small'
+	};
+  
+win = null;
+fwin = null;  
+fwin1 = null;  
+fwin2 = null;  
+  
+Ext.onReady(function(){
+    var button = Ext.get('show-btn');
+
+    button.on('click', function(){
+      
+      if(win && win.isVisible()) return;
+      
+      win = Ext.create('widget.window', {
+          id: 'demowindow',
+          title: 'Window',
+          closable: true,
+          maximizable: true,
+          closeAction: 'destroy',
+          width: 950,
+          height: 500,
+          layout: 'fit',
+          plain: true,
+          modal: true,
+          border: false,
+          bodyBorder: false,
+
+          focusOnToFront: false,
+          toFrontOnShow: false,
+          preventFocusOnActivate: true,
+         
+          buttons: [
+            {
+              text: 'Submit',
+              
+              handler: function() {
+                main_form.getForm().submit({ url: 'process.js', method: 'get', success: function(form, action) { Ext.MessageBox.alert("Information", "Submit done!"); } });
+              }
+            },
+            {
+              text: 'Close',
+              
+              handler: function() {
+                win.close();
+              }
+            }
+          ],
+          
+          items: main_form = Ext.create('Ext.form.FormPanel', {
+
+            border: false,
+            layout: 'fit',
+            trackResetOnLoad: true,
+            
+            items: Ext.createWidget('tabpanel', {
+              activeTab: 0,
+              
+              deferredRender: false,
+              
+              items: [
+                {
+                    title: 'English',
+                    layout: 'border',
+                    border: false,
+
+                    bodyStyle: 'background-color: transparent;padding: 5px 5px 5px 5px',
+
+                    tbar: [
+                      {
+                        text: 'WYSIWYG / HTML Text',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) ed.toggleEditor();
+                        }
+                      },
+                      {
+                        text: 'Remove',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) ed.removeEditor();
+                        }
+                      },
+                      {
+                        text: 'Toggle ReadOnly',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) 
+                          {
+                            if(ed.readOnly) ed.setReadOnly(false);
+                            else            ed.setReadOnly(true);
+                          }
+                        }
+                      },
+                      {
+                        text: 'Enable / Disable',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) 
+                          {
+                            if(ed.isDisabled()) ed.enable();
+                            else                ed.disable();
+                          }
+                        }
+                      },
+                      {
+                        text: 'Change CSS',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) 
+                          {
+                            ed.reinitEditor({ 
+                              content_css: 'contents2.css'
+                            });
+                          }
+                        }
+                      },
+                      {
+                        text: 'Show HTML Text',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) 
+                          {
+                            alert(ed.getValue());
+                          }
+                        }
+                      },
+                      {
+                        text: 'Set Some Value',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) 
+                          {
+                            ed.setValue('Some<br>unformated HTML text');
+                          }
+                        }
+                      },
+                      {
+                        text: 'Focus',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          ed.focus();
+                        }
+                      },
+                      {
+                        text: 'Toggle Error',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(!ed.hasActiveError()) ed.setActiveError('There are troubles!');
+                          else                     ed.clearInvalid();
+                          
+                          ed = main_form.getForm().findField('english_title');
+                          if(!ed.hasActiveError()) ed.setActiveError('There are troubles!');
+                          else                     ed.clearInvalid();
+                        }
+                      },
+                      {
+                        text: 'Insert Placeholder',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          ed.storeCurrentSelection();
+                          
+                          Ext.MessageBox.prompt('Name', 'Please enter your name:', function(btn, text) {
+                            // After closing the ExtJS window used for the WYSIWYG popup,
+                            // the ExtJS focuses the previously active window, and it does
+                            // with a delay.
+                            // If we restore the cursor position in the WYSIWYG immediately,
+                            // it is lost upon focusing the previously active window. Thus,
+                            // do it also with a longer delay.
+                            
+                            setTimeout(function () {
+                              if(ed) 
+                              {
+                                ed.restoreCurrentSelection();
+                                if(btn == "ok") ed.insertText('{' + text + '}');
+                                else            ed.focus();
+                              }
+                            }, 300);
+                          });
+                        }
+                      }
+                      /*,
+                      {
+                        text: 'Get Size',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('english');
+                          if(ed) 
+                          {
+                            alert(ed.getWidth() + ':' + ed.getHeight());
+                          }
+                        }
+                      },
+                      {
+                        text: 'Clear Dirtry',
+                        handler: function () {
+                          main_form.getForm().getFields().each(function(field) {
+                            field.resetOriginalValue();
+                          });
+                        }
+                      },
+                      {
+                        text: 'Show Dirty Fields',
+                        handler: function () {
+                          show_dirties(main_form.getForm());
+                        }
+                      }*/
+                    ],
+                    
+                    items: [
+                      {
+                        region: 'north',
+                        xtype: 'form',
+                        border: false,
+                        
+				                defaults: { anchor: '0' },
+
+                        fieldDefaults: {
+                          labelWidth: 168
+                        },
+
+                        defaultType: 'textfield',
+                        
+	                      items: [
+                          {
+                            fieldLabel: 'Title',
+                            name: 'english_title'
+                          }
+                        ]
+                      },
+                      {
+                        region: 'center',
+                        xtype: 'tinymce_textarea',
+                        //xtype: 'textarea',
+                        fieldStyle: 'font-family: Courier New; font-size: 12px;',
+                        
+                        style: { border: '0' },
+                        
+                        //noWysiwyg: true,
+                        tinyMCEConfig: tinyCfg1,
+                        
+                        id: 'english',
+                        name: 'english',
+                        value: 'English Text',
+                  
+                        listeners: {
+                          change: function(field, newValue, oldValue)
+                          {
+                            console.log('change: ' + oldValue + ' -> ' + newValue);
+                          }
+                        }                                      
+                      }
+                    ]
+                },{
+                    title: 'German',
+                    layout: 'border',
+                    border: false,
+
+                    bodyStyle: 'background-color: transparent;padding: 5px 5px 5px 5px',
+                    
+                    tbar: [
+                      {
+                        text: 'WYSIWYG / HTML Text',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) ed.toggleEditor();
+                        }
+                      },
+                      {
+                        text: 'Remove',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) ed.removeEditor();
+                        }
+                      },
+                      {
+                        text: 'Toggle ReadOnly',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) 
+                          {
+                            if(ed.readOnly) ed.setReadOnly(false);
+                            else            ed.setReadOnly(true);
+                          }
+                        }
+                      },
+                      {
+                        text: 'Enable / Disable',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) 
+                          {
+                            if(ed.isDisabled()) ed.enable();
+                            else                ed.disable();
+                          }
+                        }
+                      },
+                      {
+                        text: 'Change CSS',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) 
+                          {
+                            ed.reinitEditor({ 
+                              content_css: 'contents2.css'
+                            });
+                          }
+                        }
+                      },
+                      {
+                        text: 'Show HTML Text',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) 
+                          {
+                            alert(ed.getValue());
+                          }
+                        }
+                      },
+                      {
+                        text: 'Set Some Value',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) 
+                          {
+                            ed.setValue('Some<br>unformated HTML text');
+                          }
+                        }
+                      },
+                      {
+                        text: 'Focus',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          ed.focus();
+                        }
+                      },
+                      {
+                        text: 'Toggle Error',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(!ed.hasActiveError()) ed.setActiveError('There are troubles!');
+                          else                     ed.clearInvalid();
+                          
+                          ed = main_form.getForm().findField('german_title');
+                          if(!ed.hasActiveError()) ed.setActiveError('There are troubles!');
+                          else                     ed.clearInvalid();
+                        }
+                      },
+                      {
+                        text: 'Insert Placeholder',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          ed.storeCurrentSelection();
+                          
+                          Ext.MessageBox.prompt('Name', 'Please enter your name:', function(btn, text) {
+                            // After closing the ExtJS window used for the WYSIWYG popup,
+                            // the ExtJS focuses the previously active window, and it does
+                            // with a delay.
+                            // If we restore the cursor position in the WYSIWYG immediately,
+                            // it is lost upon focusing the previously active window. Thus,
+                            // do it also with a longer delay.
+
+                            setTimeout(function () {
+                              if(ed) 
+                              {
+                                ed.restoreCurrentSelection();
+                                if(btn == "ok") ed.insertText('{' + text + '}');
+                                else            ed.focus();
+                              }
+                            }, 300);
+                          });
+                        }
+                      }
+                      /*,
+                      {
+                        text: 'Get Size',
+                        handler: function () {
+                          var ed = main_form.getForm().findField('german');
+                          if(ed) 
+                          {
+                            alert(ed.getWidth() + ':' + ed.getHeight());
+                          }
+                        }
+                      },
+                      {
+                        text: 'Clear Dirtry',
+                        handler: function () {
+                          main_form.getForm().getFields().each(function(field) {
+                            field.resetOriginalValue();
+                          });
+                        }
+                      },
+                      {
+                        text: 'Show Dirty Fields',
+                        handler: function () {
+                          show_dirties(main_form.getForm());
+                        }
+                      }*/
+                    ],
+                    
+                    items: [
+                      {
+                        region: 'north',
+                        xtype: 'form',
+                        border: false,
+                        
+				                defaults: { anchor: '0' },
+
+                        fieldDefaults: {
+                          labelWidth: 168
+                        },
+
+                        defaultType: 'textfield',
+                        
+	                      items: [
+                          {
+                            fieldLabel: 'Title',
+                            name: 'german_title'
+                          }
+                        ]
+                      },
+                      {
+                        region: 'center',
+                        xtype: 'tinymce_textarea',
+                        //xtype: 'textarea',
+                        fieldStyle: 'font-family: Courier New; font-size: 12px;',
+
+                        noWysiwyg: false,
+                        tinyMCEConfig: tinyCfg2,
+                        
+                        id: 'german',
+                        name: 'german',
+                        value: 'German Text',
+                  
+                        listeners: {
+                          change: function(field, newValue, oldValue)
+                          {
+                            console.log('change: ' + oldValue + ' -> ' + newValue);
+                          }
+                        }                    
+                      }
+                    ]
+                }
+              ]
+          })
+        })
+      });
+      
+      win.show(this);
+    });
+    
+    button = Ext.get('show-form');
+
+    button.on('click', function(){
+      if(fwin && fwin.isVisible()) return;
+      
+      fwin = Ext.create('widget.window', {
+          id: 'demoform',
+          title: 'Form',
+          closable: true,
+          maximizable: true,
+          closeAction: 'destroy',
+          width: 780,
+          height: 500,
+          layout: 'fit',
+          plain: true,
+          modal: true,
+          border: false,
+          bodyBorder: true,
+          bodyPadding: '5 5 0',
+
+          focusOnToFront: false,
+          toFrontOnShow: false,
+          preventFocusOnActivate: true,
+         
+          buttons: [
+            {
+              text: 'Toggle ReadOnly',
+              handler: function () {
+                var ed = second_form.getForm().findField('message');
+                if(ed) 
+                {
+                  if(ed.readOnly) ed.setReadOnly(false);
+                  else            ed.setReadOnly(true);
+                }
+              }
+            },
+            {
+              text: 'Enable / Disable',
+              handler: function () {
+                var ed = second_form.getForm().findField('message');
+                if(ed) 
+                {
+                  if(ed.isDisabled()) ed.enable();
+                  else                ed.disable();
+                }
+              }
+            },
+            {
+              text: 'WYSIWYG / HTML Text',
+              handler: function () {
+                var ed = second_form.getForm().findField('message');
+                if(ed) ed.toggleEditor();
+              }
+            },
+            {
+              text: 'Submit',
+              
+              handler: function() {
+                second_form.getForm().submit({ url: 'process.js', method: 'get', success: function(form, action) { Ext.MessageBox.alert("Information", "Submit done!"); } });
+              }
+            },
+            {
+              text: 'Close',
+              
+              handler: function() {
+                fwin.close();
+              }
+            }
+          ],
+          
+          layout: {
+            type:'vbox',
+            align:'stretch'
+          },
+          
+          autoScroll: true,            
+            
+          items:  second_form = Ext.create('Ext.form.FormPanel', {
+          
+            bodyStyle: 'background-color: transparent',
+
+            border: false,
+            trackResetOnLoad: true,
+            autoScroll: false,            
+            
+            layout: 'anchor',
+            defaults: {
+              anchor: '100%'
+            },
+            
+            fieldDefaults: {
+                labelWidth: 75,
+            },
+            defaultType: 'textfield',
+            
+            items: [
+              {
+                  fieldLabel: 'Sender',
+                  id: 'sender',
+                  name: 'sender'
+              },{
+                  fieldLabel: 'Receiver',
+                  id: 'receiver',
+                  name: 'receiver'
+              },{
+                  fieldLabel: 'Subject',
+                  id: 'subject',
+                  name: 'subject'
+              },{
+                  height: 'auto',
+                  fieldLabel: 'Message',
+                  height: 300,
+                  xtype: 'tinymce_textarea',
+                  //xtype: 'textarea',
+                  fieldStyle: 'font-family: Courier New; font-size: 12px;',
+                  
+                  noWysiwyg: false,
+                  tinyMCEConfig: tinyCfg1,
+                  value: 'Some Text',
+                  id: 'message',
+                  name: 'message'
+              },{
+                  fieldLabel: 'Others',
+                  id: 'others',
+                  name: 'others'
+              }
+            ]
+          })
+      });
+      
+      fwin.show(this);
+    });
+    
+    
+    button = Ext.get('show-form1');
+
+    button.on('click', function(){
+      if(fwin1 && fwin1.isVisible()) return;
+      
+      fwin1 = Ext.create('widget.window', {
+          id: 'demoform1',
+          title: 'Form 1',
+          closable: true,
+          maximizable: true,
+          closeAction: 'destroy',
+          width: 780,
+          height: 500,
+          layout: 'fit',
+          plain: true,
+          modal: false,
+          border: false,
+          bodyBorder: true,
+          bodyPadding: '5 5 0',
+
+          focusOnToFront: true,
+          toFrontOnShow: false,
+          preventFocusOnActivate: true,
+         
+          buttons: [
+            {
+              text: 'Toggle ReadOnly',
+              handler: function () {
+                var ed = second_form1.getForm().findField('message1');
+                if(ed) 
+                {
+                  if(ed.readOnly) ed.setReadOnly(false);
+                  else            ed.setReadOnly(true);
+                }
+              }
+            },
+            {
+              text: 'Enable / Disable',
+              handler: function () {
+                var ed = second_form1.getForm().findField('message1');
+                if(ed) 
+                {
+                  if(ed.isDisabled()) ed.enable();
+                  else                ed.disable();
+                }
+              }
+            },
+            {
+              text: 'WYSIWYG / HTML Text',
+              handler: function () {
+                var ed = second_form1.getForm().findField('message1');
+                if(ed) ed.toggleEditor();
+              }
+            },
+            {
+              text: 'Submit',
+              
+              handler: function() {
+                second_form1.getForm().submit({ url: 'process.js', method: 'get', success: function(form, action) { Ext.MessageBox.alert("Information", "Submit done!"); } });
+              }
+            },
+            {
+              text: 'Close',
+              
+              handler: function() {
+                fwin1.close();
+              }
+            }
+          ],
+          
+          items: second_form1 = Ext.create('Ext.form.FormPanel', {
+          
+            bodyStyle: 'background-color: transparent',
+
+            border: false,
+            trackResetOnLoad: true,
+            autoScroll: true,
+            
+            fieldDefaults: {
+                labelWidth: 75,
+                anchor: '100%'
+            },
+            defaultType: 'textfield',
+            
+            items: [
+              {
+                  fieldLabel: 'Sender',
+                  id: 'sender',
+                  name: 'sender'
+              },{
+                  fieldLabel: 'Receiver',
+                  id: 'receiver',
+                  name: 'receiver'
+              },{
+                  fieldLabel: 'Subject',
+                  id: 'subject',
+                  name: 'subject'
+              },{
+                  height: 'auto',
+                  fieldLabel: 'Message',
+                  anchor: '100% 60%',
+                  xtype: 'tinymce_textarea',
+                  //xtype: 'textarea',
+                  fieldStyle: 'font-family: Courier New; font-size: 12px;',
+                  
+                  noWysiwyg: false,
+                  tinyMCEConfig: tinyCfg1,
+                  value: 'Some Text',
+                  id: 'message1',
+                  name: 'message1'
+              },{
+                  fieldLabel: 'Others',
+                  id: 'others',
+                  name: 'others'
+              }
+            ]
+          })
+      });
+      fwin1.show(this);
+    });
+    
+    button = Ext.get('show-form2');
+
+    button.on('click', function(){
+      if(fwin2 && fwin2.isVisible()) return;
+      
+      fwin2 = Ext.create('widget.window', {
+          id: 'demoform2',
+          title: 'Form 2',
+          closable: true,
+          maximizable: true,
+          closeAction: 'destroy',
+          x: 200,
+          width: 780,
+          height: 500,
+          layout: 'fit',
+          plain: true,
+          modal: false,
+          border: false,
+          bodyBorder: true,
+          bodyPadding: '5 5 0',
+
+          focusOnToFront: true,
+          toFrontOnShow: false,
+          preventFocusOnActivate: true,
+         
+          buttons: [
+            {
+              text: 'Toggle ReadOnly',
+              handler: function () {
+                var ed = second_form2.getForm().findField('message2');
+                if(ed) 
+                {
+                  if(ed.readOnly) ed.setReadOnly(false);
+                  else            ed.setReadOnly(true);
+                }
+              }
+            },
+            {
+              text: 'Enable / Disable',
+              handler: function () {
+                var ed = second_form2.getForm().findField('message2');
+                if(ed) 
+                {
+                  if(ed.isDisabled()) ed.enable();
+                  else                ed.disable();
+                }
+              }
+            },
+            {
+              text: 'WYSIWYG / HTML Text',
+              handler: function () {
+                var ed = second_form2.getForm().findField('message2');
+                if(ed) ed.toggleEditor();
+              }
+            },
+            {
+              text: 'Submit',
+              
+              handler: function() {
+                second_form2.getForm().submit({ url: 'process.js', method: 'get', success: function(form, action) { Ext.MessageBox.alert("Information", "Submit done!"); } });
+              }
+            },
+            {
+              text: 'Close',
+              
+              handler: function() {
+                fwin2.close();
+              }
+            }
+          ],
+          
+          items: second_form2 = Ext.create('Ext.form.FormPanel', {
+          
+            bodyStyle: 'background-color: transparent',
+
+            border: false,
+            trackResetOnLoad: true,
+            autoScroll: true,
+            
+            fieldDefaults: {
+                labelWidth: 75,
+                anchor: '100%'
+            },
+            defaultType: 'textfield',
+            
+            items: [
+              {
+                  fieldLabel: 'Sender',
+                  id: 'sender2',
+                  name: 'sender2'
+              },{
+                  fieldLabel: 'Receiver',
+                  id: 'receiver2',
+                  name: 'receiver2'
+              },{
+                  fieldLabel: 'Subject',
+                  id: 'subject2',
+                  name: 'subject2'
+              },{
+                  height: 'auto',
+                  fieldLabel: 'Message',
+                  anchor: '100% 60%',
+                  xtype: 'tinymce_textarea',
+                  //xtype: 'textarea',
+                  fieldStyle: 'font-family: Courier New; font-size: 12px;',
+                  
+                  noWysiwyg: false,
+                  tinyMCEConfig: tinyCfg1,
+                  value: 'Some Text',
+                  id: 'message2',
+                  name: 'message2'
+              },{
+                  fieldLabel: 'Others',
+                  id: 'others2',
+                  name: 'others2'
+              }
+            ]
+          })
+      });
+      fwin2.show(this);
+    });
+});
+</script>
+</head>
+<body>
+<h2>Example: Integration of the TinyMCE WYSIWYG editor into the ExtJS</h2>
+
+<p>
+Version: 5.0<br/>
+Release date: 22.09.2014<br/>
+ExtJS Version: 5.0.0<br/>
+TinyMCE Version: 4.1.5
+</p>
+
+<p>This example demonstrates several issues of integration of the TinyMCE WYSIWYG editor into the ExtJS.</p>
+
+<p>The integration is done by deriving from the Ext.form.field.TextArea.</p>
+
+<p>Following issues are covered:</p>
+
+<ul>
+  <li>Initialization in an initially visible and in an initially invisible tab.</li>
+  <li>Correct place occupation by the initialization in any ExtJS layout.</li>
+  <li>Correct resizing by the resizing of the underlying text area.</li>
+  <li>Activation and deactivation of the WYSIWYG editor. Keeping of the cursor position by switching to the HTML text modus.</li>
+  <li>Enabling and disabling of the WYSIWYG editor control.</li>
+  <li>ReadOnly state support.</li>
+  <li>Changing of WYSIWYG settings and CSS file for the editable contents on the fly.</li>
+  <li>Pre-formatting of the HTML text in visible and invisible modus.</li>
+  <li>Focusing of the WYSIWYG editor control.</li>
+  <li>Marking invalid.</li>
+  <li>Tracking dirty state.</li>
+  <li>Storing and restoring cursor position by inserting of a place holder over a popup window.</li>
+</ul>
+
+<h3>Test the usage in tab control</h3>
+
+<input type="button" id="show-btn" value="Show Window"/>
+
+<p style="color:red;font-size:90%;font-weight:bold">
+Attention!<br>
+Due to the bug in the ExtJS, the 'resize' event is not fired in some cases, if the form is resized. The 'resize' event is the key feature for the integration of the TinyMCE editor. I made the bug report, it was accepted as bug. Let's wait until it is fixed.<br><br>
+
+<a href="http://www.sencha.com/forum/showthread.php?292248" target="_blank">http://www.sencha.com/forum/showthread.php?292248</a><br><br>
+
+As lon as the bug is not fixed, use the button "WYSIWYG / HTML" to activate the editor.
+</p>
+
+<h3>Test the usage in the form</h3>
+
+<input type="button" id="show-form" value="Show Form"/>
+
+<h3>Test overlapping of two windows with editor</h3>
+
+<input type="button" id="show-form1" value="Show Form 1"/>
+
+<input type="button" id="show-form2" value="Show Form 2"/>
+
+<br/><br/>
+
+<a href="http://www.point-constructor.com/en/tinyta/" target="_blank" style="font-size:14px;font-weight: bold">Download Sources and Demo</a>
+
+</body>
+</html>
