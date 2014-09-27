@@ -6,11 +6,11 @@
 
  ExtJS form field - a text area with integrated TinyMCE WYSIWYG Editor
 
- Version: 5.0.0
- Release date: 22.09.2014
+ Version: 5.1
+ Release date: 27.09.2014
  ExtJS Version: 5.0.0
  TinyMCE Version: 4.1.5
- License: LGPL v2.1 or later, Sencha License
+ License: LGPL v3 or later, Sencha License
 
  Author: Oleg Schildt
  E-Mail: Oleg.Schildt@gmail.com
@@ -60,6 +60,18 @@ Ext.define('Ext.ux.form.TinyMCETextArea', {
      */
     tinyMCEConfig: {},
 
+    /*
+     In the ExtJS 5.x, the liquid layout is used if possible. 
+     The liquid layout means that the component is rendered
+     with the help of pure CSS without any JavaScript. In this 
+     case, no sizing events are fired.
+     
+     However, the event 'resize' is essential for the 
+     Ext.ux.form.TinyMCETextArea. For that reason, we set 
+     liquidLayout to false.
+     */
+    liquidLayout: false,
+    
     //-----------------------------------------------------------------
     afterRender: function () {
         var me = this;
