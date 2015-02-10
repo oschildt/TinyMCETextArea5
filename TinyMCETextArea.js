@@ -101,24 +101,8 @@ Ext.define('Ext.ux.form.TinyMCETextArea', {
                 }
             }
         }, me);
-        
-        me.on('resize', function (elm, width, height, oldWidth, oldHeight, eOpts) {
-             
-             /*
-             alert('width:' + width + '\n' +
-             'height:' + height + '\n' +
-             'oldWidth:' + oldWidth + '\n' +
-             'oldHeight:' + oldHeight
-             );*/
 
-            if (!me.noWysiwyg && !me.wysiwygIntialized) {
-                me.initEditor(height);
-            }
-            else
-            {
-                me.syncEditorHeight(height);
-            }
-        }, me);
+        me.initEditor(this.height);
     },
     //-----------------------------------------------------------------
     syncEditorHeight: function (height) {
@@ -237,6 +221,12 @@ Ext.define('Ext.ux.form.TinyMCETextArea', {
         if (me.tinyMCEConfig.setup) { user_setup = me.tinyMCEConfig.setup; }
         
         // BEGIN: setup
+
+        me.tinyMCEConfig.init_instance_callback = function (ed) {
+            me.on('resize', function (elm, width, height, oldWidth, oldHeight, eOpts) {
+                me.syncEditorHeight(height);
+            }, me);
+        };
         me.tinyMCEConfig.setup = function (ed) {
         
             ed.on('init', function(e) {
