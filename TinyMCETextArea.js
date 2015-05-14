@@ -270,6 +270,9 @@ Ext.define('Ext.ux.form.TinyMCETextArea', {
                 ed.save();
 
                 me.fireEvent('change', me, newval, oldval, {});
+                
+                me.publishState('rawValue', newval);
+
                 me.checkDirty();
 
                 if (me.validateOnChange) {
